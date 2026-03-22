@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meridian">
+<meta name="theme-color" content="#070d1a">
+<title>Meridian</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #070d1a;
+    --card: rgba(255,255,255,0.05);
+    --border: rgba(255,255,255,0.08);
+    --teal: #7EC8C8;
+    --green: #82C9A0;
+    --yellow: #F2C94C;
+    --pink: #F4A6C0;
+    --purple: #B8A9E8;
+    --red: #E88B8B;
+    --orange: #F4A86A;
+    --text: rgba(255,255,255,0.85);
+    --muted: rgba(255,255,255,0.4);
+    --dimmed: rgba(255,255,255,0.2);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html, body { height: 100%; background: var(--bg); color: #fff; font-family: -apple-system, 'SF Pro Display', sans-serif; overflow: hidden; }
+  #app { height: 100%; display: flex; flex-direction: column; }
+
+  /* HEADER */
+  #header {
+    padding: calc(var(--safe-top) + 14px) 16px 12px;
+    background: rgba(7,13,26,0.96);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0; z-index: 50;
+  }
+  .logo { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; background: linear-gradient(135deg, var(--teal), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .subdate { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .hbtns { display: flex; gap: 6px; }
+  .hbtn { padding: 8px 10px; border-radius: 10px; border: none; font-size: 16px; cursor: pointer; }
+  .hbtn-meal { background: rgba(242,201,76,0.15); border: 1px solid rgba(242,201,76,0.3); }
+  .hbtn-med  { background: rgba(130,201,160,0.15); border: 1px solid rgba(130,201,160,0.3); }
+  .hbtn-log  { background: linear-gradient(135deg, var(--teal), var(--green)); color: #0a0f1e; font-size: 13px; font-weight: 800; padding: 8px 14px; }
+
+  /* SCROLL CONTENT */
+  #content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px calc(var(--safe-bottom) + 74px); }
+
+  /* BOTTOM NAV */
+  #nav {
+    padding: 10px 0 calc(var(--safe-bottom) + 8px);
+    background: rgba(7,13,26,0.97);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex; flex-shrink: 0;
+  }
+  .navbtn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; cursor: pointer; padding: 4px 0; transition: opacity 0.15s; }
+  .navbtn .nicon { font-size: 17px; line-height: 1; }
+  .navbtn .nlabel { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; color: var(--muted); }
+  .navbtn.active { opacity: 1; }
+  .navbtn.active .nlabel { color: var(--teal); }
+  .navbtn:not(.active) { opacity: 0.38; }
+
+  /* CARDS */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+  .card-sm { padding: 11px 14px; }
+  .section-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.3); letter-spacing: 1.5px; margin-bottom: 8px; margin-top: 4px; }
+
+  /* STAT GRID */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+  .stat-icon { font-size: 20px; }
+  .stat-val { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat-lbl { font-size: 9px; color: var(--muted); margin-top: 3px; }
+
+  /* TREND BARS */
+  .trend-row { display: flex; align-items: center; gap: 8px; }
+  .trend-icon { font-size: 15px; flex-shrink: 0; }
+  .trend-body { flex: 1; }
+  .trend-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .trend-name { font-size: 12px; font-weight: 600; color: var(--text); }
+  .trend-score { font-size: 13px; font-weight: 800; }
+  .trend-bar-bg { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.08); }
+  .trend-bar-fill { height: 100%; border-radius: 2px; transition: width 0.6s; }
+  .sparkline-wrap { margin-left: 8px; flex-shrink: 0; }
+
+  /* WEARABLE MINI */
+  .wear-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .wear-cell { text-align: center; padding: 10px 4px; background: rgba(255,255,255,0.04); border-radius: 10px; }
+  .wear-val { font-size: 18px; font-weight: 800; color: var(--teal); }
+  .wear-val.warn { color: var(--red); }
+  .wear-lbl { font-size: 9px; color: var(--muted); }
+
+  /* ALERT BANNERS */
+  .banner { border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .banner-pp { background: rgba(242,201,76,0.1); border: 1px solid rgba(242,201,76,0.25); }
+  .banner-pressure { background: rgba(244,166,192,0.1); border: 1px solid rgba(244,166,192,0.25); }
+  .banner-icon { font-size: 20px; flex-shrink: 0; }
+  .banner-title { font-size: 13px; font-weight: 700; }
+  .banner-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  /* MODAL OVERLAY */
+  #overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); z-index: 200; align-items: flex-end; justify-content: center; }
+  #overlay.show { display: flex; }
+  .sheet { width: 100%; max-width: 480px; background: #0d1426; border: 1px solid rgba(255,255,255,0.12); border-radius: 24px 24px 0 0; padding: 0 0 calc(var(--safe-bottom) + 24px); max-height: 90vh; overflow-y: auto; }
+  .sheet-handle { display: flex; justify-content: center; padding: 12px 0 0; }
+  .handle-bar { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.2); }
+  .sheet-title { padding: 12px 20px 16px; font-size: 18px; font-weight: 800; }
+  .sheet-body { padding: 0 20px; }
+  .sheet-footer { padding: 16px 20px 0; display: flex; gap: 10px; }
+  .btn-cancel { flex: 1; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: rgba(255,255,255,0.6); font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .btn-save { flex: 2; padding: 14px; border-radius: 12px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; color: #0a0f1e; }
+
+  /* FORM ELEMENTS */
+  input[type=text], input[type=date], textarea, select {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: #fff; font-size: 14px; font-family: inherit; margin-bottom: 10px; display: block;
+  }
+  input[type=text]::placeholder, textarea::placeholder { color: rgba(255,255,255,0.3); }
+  textarea { min-height: 70px; resize: none; }
+  input[type=range] { -webkit-appearance: none; width: 100%; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.12); cursor: pointer; margin: 0; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.4); }
+  input[type=date]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(0.4); }
+
+  /* SLIDER ROW */
+  .slider-row { margin-bottom: 18px; }
+  .slider-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .slider-label { font-size: 13px; color: var(--text); font-weight: 500; }
+  .slider-val { font-size: 13px; font-weight: 700; }
+
+  /* PILLS */
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .pill { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1.5px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); color: var(--muted); cursor: pointer; font-family: inherit; }
+  .pill.active { border: none; color: #0a0f1e; }
+
+  /* MED ROWS */
+  .med-row { padding: 12px 14px; border-radius: 12px; cursor: pointer; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: all 0.15s; }
+  .med-row.on { background: rgba(130,201,160,0.2); border-color: var(--green); }
+  .med-name { font-size: 14px; font-weight: 600; color: var(--text); }
+  .med-row.on .med-name { color: var(--green); }
+  .med-dose { font-size: 11px; color: var(--dimmed); margin-top: 2px; }
+
+  /* INPUT PAIR */
+  .input-pair { display: flex; gap: 8px; }
+  .input-pair input { flex: 1; margin-bottom: 10px; }
+
+  /* LAB OUT OF RANGE */
+  input.oor { background: rgba(232,139,139,0.15) !important; border-color: var(--red) !important; color: var(--red) !important; }
+  .oor-msg { font-size: 12px; color: var(--red); margin: -6px 0 8px; }
+
+  /* WEARABLE ENTRY GRID */
+  .wear-entry-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .wear-entry-cell label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+  .wear-entry-cell input { margin-bottom: 0; }
+
+  /* HISTORY ITEMS */
+  .hist-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 11px 14px; margin-bottom: 8px; }
+  .hist-meta { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 6px; }
+  .sym-tag { display: inline-block; font-size: 11px; padding: 3px 8px; border-radius: 8px; margin: 2px; }
+  .hist-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .hist-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .hist-note { font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 5px; font-style: italic; }
+
+  /* LABS */
+  .lab-item { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 11px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .lab-item.oor-item { background: rgba(232,139,139,0.07); border-color: rgba(232,139,139,0.25); }
+  .lab-name { font-size: 13px; font-weight: 700; }
+  .lab-name.oor-text { color: var(--red); }
+  .lab-ref { font-size: 10px; color: var(--muted); }
+  .lab-val { font-size: 18px; font-weight: 800; color: var(--purple); text-align: right; }
+  .lab-val.oor-text { color: var(--red); }
+  .lab-date { font-size: 10px; color: var(--muted); }
+
+  /* EXPORT */
+  .export-pre { font-size: 11px; color: rgba(255,255,255,0.75); line-height: 1.7; white-space: pre-wrap; font-family: monospace; }
+  .btn-copy { width: 100%; padding: 14px; border-radius: 12px; background: linear-gradient(135deg, var(--teal), var(--green)); border: none; color: #0a0f1e; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; font-family: inherit; }
+
+  /* EMPTY STATE */
+  .empty { text-align: center; padding: 32px 20px; }
+  .empty-icon { font-size: 28px; margin-bottom: 10px; }
+  .empty-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.4); }
+  .empty-sub { font-size: 12px; color: rgba(255,255,255,0.2); margin-top: 5px; line-height: 1.5; }
+
+  /* SOURCE TOGGLE */
+  .src-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+
+  /* EXPORT PERIOD PILLS */
+  .period-pills { display: flex; gap: 6px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div>
+      <div class="logo">Meridian</div>
+      <div class="subdate" id="headerDate"></div>
+    </div>
+    <div class="hbtns">
+      <button class="hbtn hbtn-meal" onclick="openModal('meal')">🍽️</button>
+      <button class="hbtn hbtn-med" onclick="openModal('med')">💊</button>
+      <button class="hbtn hbtn-log" onclick="openModal('symptom')">+ Log</button>
+    </div>
+  </div>
+
+  <div id="content"></div>
+
+  <nav id="nav">
+    <button class="navbtn active" data-tab="dash" onclick="switchTab('dash')"><span class="nicon">◉</span><span class="nlabel">Overview</span></button>
+    <button class="navbtn" data-tab="history" onclick="switchTab('history')"><span class="nicon">≡</span><span class="nlabel">History</span></button>
+    <button class="navbtn" data-tab="wearable" onclick="switchTab('wearable')"><span class="nicon">⌚</span><span class="nlabel">Wearable</span></button>
+    <button class="navbtn" data-tab="labs" onclick="switchTab('labs')"><span class="nicon">🔬</span><span class="nlabel">Labs</span></button>
+    <button class="navbtn" data-tab="export" onclick="switchTab('export')"><span class="nicon">↑</span><span class="nlabel">Export</span></button>
+  </nav>
+</div>
+
+<!-- MODAL OVERLAY -->
+<div id="overlay" onclick="overlayClick(event)">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const SYMPTOMS = [
+  {id:'airway', label:'Airway / Mucus',       icon:'🌬️', color:'#7EC8C8'},
+  {id:'hr',     label:'Heart Rate / Palp',    icon:'💓', color:'#E88B8B'},
+  {id:'fatigue',label:'Fatigue / Energy',     icon:'⚡', color:'#F2C94C'},
+  {id:'skin',   label:'Skin / Flushing',      icon:'🌸', color:'#F4A6C0'},
+  {id:'neuro',  label:'Neuro / Brain Fog',    icon:'🧠', color:'#B8A9E8'},
+  {id:'auto',   label:'Autonomic / Postural', icon:'🔄', color:'#82C9A0'},
+];
+const MEDS = [
+  {id:'flonase',    label:'Flonase',            dose:'2 sprays each nostril'},
+  {id:'pepcid',     label:'Pepcid (double dose)',dose:'2× standard'},
+  {id:'zyrtec',     label:'Zyrtec',             dose:'1 tablet'},
+  {id:'sudafed',    label:'Sudafed',            dose:'1 tablet'},
+  {id:'supplement', label:'Daily Supplement',   dose:'sublingual'},
+  {id:'navage',     label:'Navage Rinse',        dose:'1 session'},
+  {id:'nebulizer',  label:'Nebulizer',           dose:'1 session'},
+];
+const TRIGGERS = ['dairy','alcohol','high-histamine','fermented','processed','spicy','citrus'];
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let state = {
+  entries:  JSON.parse(localStorage.getItem('m_entries')  || '[]'),
+  meals:    JSON.parse(localStorage.getItem('m_meals')    || '[]'),
+  meds:     JSON.parse(localStorage.getItem('m_meds')     || '[]'),
+  wearable: JSON.parse(localStorage.getItem('m_wearable') || '[]'),
+  labs:     JSON.parse(localStorage.getItem('m_labs')     || '[]'),
+  weather:  null,
+  tab:      'dash',
+  exportDays: 7,
+};
+
+function save(key) { localStorage.setItem('m_' + key, JSON.stringify(state[key])); }
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmt(ts) { return new Date(ts).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtDate(ts) { return new Date(ts).toLocaleDateString([],{month:'short',day:'numeric'}); }
+function today() { return new Date().toDateString(); }
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function sevColor(v) { if(v<=2)return'#82C9A0'; if(v<=4)return'#F2C94C'; if(v<=6)return'#F4A86A'; if(v<=8)return'#E88B8B'; return'#C0392B'; }
+function sevLabel(v) { if(v===0)return'None'; if(v<=2)return'Mild'; if(v<=4)return'Moderate'; if(v<=6)return'Significant'; if(v<=8)return'Severe'; return'Critical'; }
+function wIcon(c) { if(c===0)return'☀️'; if(c<=3)return'⛅'; if(c<=48)return'🌫️'; if(c<=67)return'🌧️'; if(c<=77)return'❄️'; if(c<=82)return'🌦️'; return'⛈️'; }
+function e(tag, attrs={}, ...children) {
+  const el = document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)) { if(k==='class') el.className=v; else if(k.startsWith('on')) el.addEventListener(k.slice(2),v); else el.setAttribute(k,v); }
+  for(const c of children) { if(c==null) continue; el.appendChild(typeof c==='string'?document.createTextNode(c):c); }
+  return el;
+}
+function h(html) { const d=document.createElement('div'); d.innerHTML=html; return d; }
+
+function sparklineSVG(data, color, w=80, h=30) {
+  if(!data||data.length<2) return '';
+  const max = Math.max(...data, 1);
+  const pts = data.map((v,i)=>`${(i/(data.length-1))*w},${h-((v/max)*h)}`).join(' ');
+  const fill = `0,${h} ${pts} ${w},${h}`;
+  return `<svg width="${w}" height="${h}" style="overflow:visible"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/><polyline points="${fill}" fill="${color}" opacity="0.12" stroke="none"/></svg>`;
+}
+
+// ── WEATHER ───────────────────────────────────────────────────────────────────
+function fetchWeather() {
+  if(!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const {latitude:lat, longitude:lon} = pos.coords;
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,surface_pressure,weather_code,wind_speed_10m&temperature_unit=fahrenheit`);
+      const d = await r.json(); const c = d.current;
+      state.weather = {temp: c.temperature_2m, humidity: c.relative_humidity_2m, pressure: Math.round(c.surface_pressure), code: c.weather_code, wind: Math.round(c.wind_speed_10m)};
+      render();
+    } catch {}
+  }, ()=>{});
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  // Header date
+  const w = state.weather;
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'}) +
+    (w ? ` · ${Math.round(w.temp)}°F ${wIcon(w.code)}` : '');
+
+  const content = document.getElementById('content');
+  content.innerHTML = '';
+
+  if(state.tab === 'dash')     renderDash(content);
+  if(state.tab === 'history')  renderHistory(content);
+  if(state.tab === 'wearable') renderWearable(content);
+  if(state.tab === 'labs')     renderLabs(content);
+  if(state.tab === 'export')   renderExport(content);
+}
+
+function switchTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('.navbtn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  render();
+  document.getElementById('content').scrollTop = 0;
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDash(el) {
+  const w = state.weather;
+  const last7cut = Date.now() - 7*86400000;
+  const last7 = state.entries.filter(e => e.ts > last7cut);
+  const todayE = state.entries.filter(e => new Date(e.ts).toDateString() === today());
+  const todayM = state.meals.filter(m => new Date(m.ts).toDateString() === today());
+  const todayMd = state.meds.filter(m => new Date(m.ts).toDateString() === today());
+  const ppActive = state.meals.some(m => m.ppWindow && Date.now() < m.ppWindow);
+  const latestW = state.wearable[state.wearable.length-1];
+
+  let html = '';
+
+  // Weather
+  if(w) {
+    const lowP = w.pressure < 1010;
+    html += `<div class="banner ${lowP?'banner-pressure':'card'}" style="${lowP?'':'background:rgba(255,255,255,0.04);'}margin-bottom:10px;">
+      <span class="banner-icon">${wIcon(w.code)}</span>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:700;">${Math.round(w.temp)}°F · ${w.humidity}% humidity · ${w.wind}mph wind</div>
+        <div style="font-size:11px;color:var(--muted);">${w.pressure} hPa${lowP?' · ⚠️ Low pressure — potential trigger':''}</div>
+      </div>
+    </div>`;
+  }
+
+  // Postprandial
+  if(ppActive) html += `<div class="banner banner-pp">
+    <span class="banner-icon">⏱️</span>
+    <div><div class="banner-title" style="color:var(--yellow);">Postprandial window active</div><div class="banner-sub">Watch for HR spikes · tap + Log if symptoms arise</div></div>
+  </div>`;
+
+  // Today stats
+  html += `<div class="section-label">TODAY</div>
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-icon">📊</div><div class="stat-val" style="color:var(--teal)">${todayE.length}</div><div class="stat-lbl">Symptom Logs</div></div>
+    <div class="stat-card"><div class="stat-icon">🍽️</div><div class="stat-val" style="color:var(--yellow)">${todayM.length}</div><div class="stat-lbl">Meals</div></div>
+    <div class="stat-card"><div class="stat-icon">💊</div><div class="stat-val" style="color:var(--green)">${todayMd.length}</div><div class="stat-lbl">Med Logs</div></div>
+  </div>`;
+
+  // Wearable snapshot
+  if(latestW) {
+    const rhrWarn = latestW.rhr && +latestW.rhr > 90;
+    const hrvWarn = latestW.hrv && +latestW.hrv < 20;
+    const spo2Warn = latestW.spo2 && +latestW.spo2 < 95;
+    html += `<div class="section-label" style="margin-top:4px;">WEARABLE · ${fmtDate(latestW.ts)}</div>
+    <div class="card" style="margin-bottom:12px;">
+      <div class="wear-grid">
+        <div class="wear-cell"><div class="wear-val ${rhrWarn?'warn':''}">${latestW.rhr||'—'}</div><div class="wear-lbl">RHR bpm</div></div>
+        <div class="wear-cell"><div class="wear-val ${hrvWarn?'warn':''}">${latestW.hrv||'—'}</div><div class="wear-lbl">HRV ms</div></div>
+        <div class="wear-cell"><div class="wear-val ${spo2Warn?'warn':''}">${latestW.spo2||'—'}</div><div class="wear-lbl">SpO2 %</div></div>
+      </div>
+    </div>`;
+  }
+
+  // 7-day trends
+  html += `<div class="section-label" style="margin-top:4px;">7-DAY SYMPTOM TRENDS</div>`;
+  if(last7.length === 0) {
+    html += `<div class="card empty"><div class="empty-icon">👆</div><div class="empty-title">Tap + Log to start tracking</div><div class="empty-sub">Patterns will appear here after your first entry</div></div>`;
+  } else {
+    const avgs = SYMPTOMS.map(cat => {
+      const vals = last7.map(e => e.symptoms?.[cat.id]||0);
+      const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+      const daily = Array.from({length:7},(_,i)=>{
+        const d=new Date(); d.setDate(d.getDate()-(6-i)); d.setHours(0,0,0,0);
+        const n=new Date(d); n.setDate(n.getDate()+1);
+        const de=state.entries.filter(e=>e.ts>=d.getTime()&&e.ts<n.getTime());
+        return de.length?de.reduce((a,e)=>a+(e.symptoms?.[cat.id]||0),0)/de.length:0;
+      });
+      return {...cat, avg: Math.round(avg*10)/10, daily};
+    }).sort((a,b)=>b.avg-a.avg);
+
+    avgs.forEach(cat => {
+      const sc = cat.avg===0?'rgba(255,255,255,0.2)':sevColor(cat.avg);
+      html += `<div class="card card-sm" style="margin-bottom:8px;">
+        <div class="trend-row">
+          <span class="trend-icon">${cat.icon}</span>
+          <div class="trend-body">
+            <div class="trend-header">
+              <span class="trend-name">${cat.label}</span>
+              <span class="trend-score" style="color:${sc}">${cat.avg}</span>
+            </div>
+            <div class="trend-bar-bg"><div class="trend-bar-fill" style="width:${(cat.avg/10)*100}%;background:${cat.color}"></div></div>
+          </div>
+          <div class="sparkline-wrap">${sparklineSVG(cat.daily, cat.color)}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  // Recent labs
+  const recentLabs = [...state.labs].reverse().slice(0,3);
+  if(recentLabs.length) {
+    html += `<div class="section-label" style="margin-top:4px;">RECENT LABS</div>`;
+    recentLabs.forEach(l => {
+      html += `<div class="lab-item ${l.oor?'oor-item':''}">
+        <div><div class="lab-name ${l.oor?'oor-text':''}">${l.name}${l.oor?' ⚠️':''}</div><div class="lab-date">${l.date}</div></div>
+        <div class="lab-val ${l.oor?'oor-text':''}">${l.val} ${l.unit||''}</div>
+      </div>`;
+    });
+  }
+
+  el.innerHTML = html;
+}
+
+// ── HISTORY ───────────────────────────────────────────────────────────────────
+function renderHistory(el) {
+  let html = `<div class="section-label">ALL ENTRIES</div>`;
+  const all = [
+    ...state.entries.map(e=>({...e,_t:'s'})),
+    ...state.meals.map(m=>({...m,_t:'m'})),
+    ...state.meds.map(m=>({...m,_t:'md'})),
+  ].sort((a,b)=>b.ts-a.ts);
+
+  if(!all.length) { html += `<div class="card empty"><div class="empty-title">No entries yet</div></div>`; }
+  else all.forEach(item => {
+    let body = '';
+    if(item._t==='s') {
+      const tags = SYMPTOMS.filter(c=>item.symptoms?.[c.id]>0).map(c=>`<span class="sym-tag" style="background:${c.color}22;border:1px solid ${c.color}44;color:${c.color}">${c.icon} ${c.label}: ${item.symptoms[c.id]}</span>`).join('');
+      body = tags || '<span style="font-size:12px;color:var(--dimmed)">All 0</span>';
+    } else if(item._t==='m') {
+      body = `<div class="hist-name">${item.meal||'—'}</div>${item.drink?`<div class="hist-sub">🥤 ${item.drink}</div>`:''}${item.tags?.length?`<div style="font-size:11px;color:var(--pink);margin-top:3px">Triggers: ${item.tags.join(', ')}</div>`:''}`;
+    } else {
+      const taken = (item.taken||[]).map(id=>MEDS.find(m=>m.id===id)?.label).filter(Boolean).join(', ')||'None checked';
+      body = `<div style="font-size:12px;color:var(--text)">${taken}</div>`;
+    }
+    const typeLabel = item._t==='s'?'⚡ SYMPTOMS':item._t==='m'?'🍽️ MEAL':'💊 MEDS';
+    html += `<div class="hist-item">
+      <div class="hist-meta">${typeLabel} · ${fmt(item.ts)}</div>
+      ${body}
+      ${item.notes?`<div class="hist-note">${item.notes}</div>`:''}
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+// ── WEARABLE ──────────────────────────────────────────────────────────────────
+function renderWearable(el) {
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div class="section-label" style="margin:0">WEARABLE DATA</div>
+    <button onclick="openModal('wearable')" style="padding:7px 14px;border-radius:10px;background:var(--teal);border:none;color:#0a0f1e;font-size:12px;font-weight:700;cursor:pointer;">+ Entry</button>
+  </div>`;
+
+  if(!state.wearable.length) {
+    html += `<div class="card empty"><div class="empty-icon">⌚</div><div class="empty-title">No wearable data yet</div><div class="empty-sub">Pull from Health Auto Export (Apple Watch) or Oura app, then enter here</div></div>`;
+  } else {
+    [...state.wearable].reverse().forEach(w => {
+      const fields = [['RHR',w.rhr,'bpm',+w.rhr>90],['HRV',w.hrv,'ms',+w.hrv<20],['SpO2',w.spo2,'%',+w.spo2<95],['Sleep',w.sleep,'score',+w.sleep<60],['Hrs',w.hrs,'',+w.hrs<5],['Steps',w.steps,'',false]].filter(([,v])=>v);
+      html += `<div class="card" style="margin-bottom:8px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${w.src==='oura'?'💍 Oura':'⌚ Apple Watch'} · ${fmt(w.ts)}</div>
+        <div class="wear-grid">
+          ${fields.map(([l,v,u,warn])=>`<div class="wear-cell"><div class="wear-val ${warn?'warn':''}">${v}</div><div class="wear-lbl">${l}${u?' '+u:''}</div></div>`).join('')}
+        </div>
+        ${w.notes?`<div style="font-size:11px;color:var(--muted);margin-top:8px;font-style:italic">${w.notes}</div>`:''}
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+// ── LABS ──────────────────────────────────────────────────────────────────────
+function renderLabs(el) {
+  const oor = state.labs.filter(l=>l.oor);
+  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <div class="section-label" style="margin:0">LAB RESULTS</div>
+    <button onclick="openModal('lab')" style="padding:7px 14px;border-radius:10px;background:var(--purple);border:none;color:#0a0f1e;font-size:12px;font-weight:700;cursor:pointer;">+ Add Result</button>
+  </div>`;
+
+  if(oor.length) {
+    html += `<div class="section-label" style="color:var(--red)">⚠️ OUT OF RANGE</div>`;
+    oor.forEach(l => html += `<div class="lab-item oor-item"><div><div class="lab-name oor-text">${l.name}</div>${l.lo&&l.hi?`<div class="lab-ref">Ref: ${l.lo}–${l.hi} ${l.unit||''}</div>`:''}</div><div><div class="lab-val oor-text">${l.val} ${l.unit||''}</div><div class="lab-date">${l.date}</div></div></div>`);
+    html += `<div class="section-label" style="margin-top:10px">ALL RESULTS</div>`;
+  }
+
+  if(!state.labs.length) {
+    html += `<div class="card empty"><div class="empty-icon">🔬</div><div class="empty-title">No lab results yet</div></div>`;
+  } else {
+    [...state.labs].reverse().forEach(l => {
+      html += `<div class="lab-item ${l.oor?'oor-item':''}">
+        <div><div class="lab-name ${l.oor?'oor-text':''}">${l.name}${l.oor?' ⚠️':''}</div>${l.lo&&l.hi?`<div class="lab-ref">Ref: ${l.lo}–${l.hi} ${l.unit||''}</div>`:''}</div>
+        <div><div class="lab-val ${l.oor?'oor-text':''}">${l.val} ${l.unit||''}</div><div class="lab-date">${l.date}</div></div>
+      </div>`;
+    });
+  }
+  el.innerHTML = html;
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function renderExport(el) {
+  const days = state.exportDays;
+  const cut = Date.now() - days*86400000;
+  const fe = state.entries.filter(e=>e.ts>=cut);
+  const avgs = SYMPTOMS.map(c=>{
+    const vs=fe.map(e=>e.symptoms?.[c.id]||0);
+    const avg=vs.length?vs.reduce((a,b)=>a+b,0)/vs.length:null;
+    return {...c, avg};
+  });
+  const txt = [
+    `MERIDIAN HEALTH REPORT — ${new Date().toLocaleDateString()}`,
+    `Period: Last ${days} days  |  Symptom entries: ${fe.length}`,``,
+    `⚠️  SAFETY CONTRAINDICATIONS:`,
+    `  • Levaquin: CONTRAINDICATED`,
+    `  • Penicillin: severe reaction`,
+    `  • Bee stings: severe reaction`,
+    `  • Montelukast (Singulair): PERMANENTLY contraindicated (hives ×2)`,
+    `  • Oral cromolyn: ruled out (GI/emetophobia)`,``,
+    `SYMPTOM AVERAGES (0–10 scale):`,
+    ...avgs.map(c=>c.avg!==null?`  ${c.label}: ${c.avg.toFixed(1)} — ${sevLabel(c.avg)}`:`  ${c.label}: no data`),``,
+    `RECENT LAB RESULTS:`,
+    ...(state.labs.length?[...state.labs].reverse().slice(0,6).map(l=>`  ${l.date} — ${l.name}: ${l.val}${l.unit?' '+l.unit:''}${l.oor?' ⚠️ OUT OF RANGE':''}`):['  None logged']),``,
+    `MEALS LOGGED: ${state.meals.filter(m=>m.ts>=cut).length}`,
+    `MED LOGS: ${state.meds.filter(m=>m.ts>=cut).length}`,
+  ].join('\n');
+
+  el.innerHTML = `<div class="section-label">PROVIDER SUMMARY</div>
+  <div class="period-pills">
+    ${[7,14,30].map(d=>`<button onclick="setExportDays(${d})" style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;${days===d?'background:var(--teal);border:none;color:#0a0f1e':'background:rgba(255,255,255,0.05);border:1.5px solid rgba(255,255,255,0.15);color:var(--muted)'}">Last ${d}d</button>`).join('')}
+  </div>
+  <div class="card" style="background:rgba(0,0,0,0.3)"><pre class="export-pre" id="exportText">${txt}</pre></div>
+  <button class="btn-copy" onclick="copyExport()">Copy to Clipboard</button>`;
+}
+
+function setExportDays(d) { state.exportDays=d; render(); }
+function copyExport() {
+  const txt = document.getElementById('exportText')?.textContent||'';
+  navigator.clipboard?.writeText(txt).then(()=>{ alert('Copied to clipboard!'); });
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────────
+const sliderVals = {};
+
+function openModal(type) {
+  const overlay = document.getElementById('overlay');
+  const sheet = document.getElementById('sheet');
+  overlay.classList.add('show');
+
+  if(type==='symptom') renderSymptomSheet(sheet);
+  else if(type==='meal') renderMealSheet(sheet);
+  else if(type==='med') renderMedSheet(sheet);
+  else if(type==='wearable') renderWearableSheet(sheet);
+  else if(type==='lab') renderLabSheet(sheet);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('sheet').innerHTML='';
+}
+
+function overlayClick(e) { if(e.target===document.getElementById('overlay')) closeModal(); }
+
+// SYMPTOM SHEET
+function renderSymptomSheet(sheet) {
+  SYMPTOMS.forEach(c => { sliderVals[c.id]=0; });
+  const w = state.weather;
+  const wStr = w ? ` · ${Math.round(w.temp)}°F · ${w.pressure}hPa${w.pressure<1010?' ⚠️':''}` : '';
+  sheet.innerHTML = `
+    <div class="sheet-handle"><div class="handle-bar"></div></div>
+    <div class="sheet-title">⚡ Quick Log</div>
+    <div class="sheet-body">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:14px">${new Date().toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}${wStr}</div>
+      ${SYMPTOMS.map(c=>`
+        <div class="slider-row">
+          <div class="slider-header">
+            <span class="slider-label">${c.icon} ${c.label}</span>
+            <span class="slider-val" id="sv_${c.id}" style="color:rgba(255,255,255,0.3)">0 — None</span>
+          </div>
+          <input type="range" min="0" max="10" value="0" style="accent-color:${c.color}" oninput="updateSlider('${c.id}',this.value,'${c.color}')">
+        </div>`).join('')}
+      <textarea id="sym_notes" placeholder="Notes, triggers, context…"></textarea>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" style="background:var(--teal)" onclick="saveSymptom()">Save Entry</button>
+    </div>`;
+}
+
+function updateSlider(id, val, color) {
+  sliderVals[id] = +val;
+  const el = document.getElementById('sv_'+id);
+  if(el) { el.textContent=`${val} — ${sevLabel(+val)}`; el.style.color = +val===0?'rgba(255,255,255,0.3)':sevColor(+val); }
+}
+
+function saveSymptom() {
+  const symptoms = {};
+  SYMPTOMS.forEach(c => symptoms[c.id] = sliderVals[c.id]||0);
+  const notes = document.getElementById('sym_notes')?.value||'';
+  state.entries.push({symptoms, notes, weather: state.weather, ts: Date.now()});
+  save('entries'); closeModal(); render();
+}
+
+// MEAL SHEET
+function renderMealSheet(sheet) {
+  sheet.innerHTML = `
+    <div class="sheet-handle"><div class="handle-bar"></div></div>
+    <div class="sheet-title">🍽️ Meal / Drink</div>
+    <div class="sheet-body">
+      <input type="text" id="meal_food" placeholder="What did you eat?">
+      <input type="text" id="meal_drink" placeholder="Drinks? (water, coffee, etc.)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px">POTENTIAL TRIGGERS</div>
+      <div class="pills" id="trigger_pills">
+        ${TRIGGERS.map(t=>`<button class="pill" data-trigger="${t}" onclick="toggleTrigger(this,'${t}')">${t}</button>`).join('')}
+      </div>
+      <textarea id="meal_notes" placeholder="Notes…"></textarea>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" style="background:var(--yellow)" onclick="saveMeal()">Log + Watch 30min</button>
+    </div>`;
+}
+
+const activeTriggers = new Set();
+function toggleTrigger(btn, t) {
+  if(activeTriggers.has(t)) { activeTriggers.delete(t); btn.classList.remove('active'); btn.style.background=''; btn.style.color=''; }
+  else { activeTriggers.add(t); btn.classList.add('active'); btn.style.background='#F4A6C0'; btn.style.color='#0a0f1e'; }
+}
+
+function saveMeal() {
+  state.meals.push({meal:document.getElementById('meal_food').value, drink:document.getElementById('meal_drink').value, tags:[...activeTriggers], notes:document.getElementById('meal_notes').value, ts:Date.now(), ppWindow:Date.now()+30*60*1000});
+  activeTriggers.clear(); save('meals'); closeModal(); render();
+}
+
+// MED SHEET
+function renderMedSheet(sheet) {
+  sheet.innerHTML = `
+    <div class="sheet-handle"><div class="handle-bar"></div></div>
+    <div class="sheet-title">💊 Meds & Supplements</div>
+    <div class="sheet-body">
+      ${MEDS.map(m=>`<div class="med-row" id="med_${m.id}" onclick="toggleMed('${m.id}')"><div><div class="med-name">${m.label}</div><div class="med-dose">${m.dose}</div></div><span id="medcheck_${m.id}" style="font-size:20px">⬜</span></div>`).join('')}
+      <textarea id="med_notes" placeholder="Notes (missed dose, reaction, timing…)"></textarea>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" style="background:var(--green)" onclick="saveMeds()">Save</button>
+    </div>`;
+}
+
+const activeMeds = new Set();
+function toggleMed(id) {
+  const row = document.getElementById('med_'+id);
+  const chk = document.getElementById('medcheck_'+id);
+  if(activeMeds.has(id)) { activeMeds.delete(id); row.classList.remove('on'); chk.textContent='⬜'; }
+  else { activeMeds.add(id); row.classList.add('on'); chk.textContent='✅'; }
+}
+
+function saveMeds() {
+  state.meds.push({taken:[...activeMeds], notes:document.getElementById('med_notes').value, ts:Date.now()});
+  activeMeds.clear(); save('meds'); closeModal(); render();
+}
+
+// WEARABLE SHEET
+function renderWearableSheet(sheet) {
+  sheet.innerHTML = `
+    <div class="sheet-handle"><div class="handle-bar"></div></div>
+    <div class="sheet-title">⌚ Wearable Data</div>
+    <div class="sheet-body">
+      <div class="src-toggle">
+        <button class="pill active" id="src_apple" style="background:var(--teal);color:#0a0f1e;border:none" onclick="setSrc('apple')">⌚ Apple Watch</button>
+        <button class="pill" id="src_oura" onclick="setSrc('oura')">💍 Oura Ring</button>
+      </div>
+      <div class="wear-entry-grid">
+        <div class="wear-entry-cell"><label>RHR (bpm)</label><input type="text" id="w_rhr" placeholder="—" oninput="checkWearWarn('rhr',this,v=>v>90)"></div>
+        <div class="wear-entry-cell"><label>HRV (ms)</label><input type="text" id="w_hrv" placeholder="—" oninput="checkWearWarn('hrv',this,v=>v<20)"></div>
+        <div class="wear-entry-cell"><label>SpO2 (%)</label><input type="text" id="w_spo2" placeholder="—" oninput="checkWearWarn('spo2',this,v=>v<95)"></div>
+        <div class="wear-entry-cell"><label>Sleep Score</label><input type="text" id="w_sleep" placeholder="—" oninput="checkWearWarn('sleep',this,v=>v<60)"></div>
+        <div class="wear-entry-cell"><label>Sleep Hours</label><input type="text" id="w_hrs" placeholder="—" oninput="checkWearWarn('hrs',this,v=>v<5)"></div>
+        <div class="wear-entry-cell"><label>Steps</label><input type="text" id="w_steps" placeholder="—"></div>
+      </div>
+      <textarea id="w_notes" placeholder="Notes (postprandial spikes, unusual readings…)"></textarea>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" style="background:var(--teal)" onclick="saveWearable()">Save</button>
+    </div>`;
+}
+
+let wearSrc = 'apple';
+function setSrc(s) {
+  wearSrc=s;
+  ['apple','oura'].forEach(k=>{
+    const b=document.getElementById('src_'+k);
+    if(k===s){b.style.background='var(--teal)';b.style.color='#0a0f1e';b.style.border='none';}
+    else{b.style.background='rgba(255,255,255,0.05)';b.style.color='var(--muted)';b.style.border='1.5px solid rgba(255,255,255,0.15)';}
+  });
+}
+
+function checkWearWarn(id, input, warnFn) {
+  const v = parseFloat(input.value);
+  const warn = !isNaN(v) && warnFn(v);
+  input.style.background = warn?'rgba(232,139,139,0.15)':'rgba(255,255,255,0.06)';
+  input.style.borderColor = warn?'var(--red)':'rgba(255,255,255,0.1)';
+  input.style.color = warn?'var(--red)':'#fff';
+}
+
+function saveWearable() {
+  state.wearable.push({src:wearSrc, rhr:document.getElementById('w_rhr').value, hrv:document.getElementById('w_hrv').value, spo2:document.getElementById('w_spo2').value, sleep:document.getElementById('w_sleep').value, hrs:document.getElementById('w_hrs').value, steps:document.getElementById('w_steps').value, notes:document.getElementById('w_notes').value, ts:Date.now()});
+  save('wearable'); closeModal(); render();
+}
+
+// LAB SHEET
+function renderLabSheet(sheet) {
+  sheet.innerHTML = `
+    <div class="sheet-handle"><div class="handle-bar"></div></div>
+    <div class="sheet-title">🔬 Add Lab Result</div>
+    <div class="sheet-body">
+      <input type="text" id="lab_name" placeholder="Test name (IgE, Eosinophils, HRV…)">
+      <input type="date" id="lab_date" value="${todayISO()}">
+      <div class="input-pair">
+        <input type="text" id="lab_val" placeholder="Value" oninput="checkLabOOR()">
+        <input type="text" id="lab_unit" placeholder="Unit">
+      </div>
+      <div id="oor_msg" class="oor-msg" style="display:none">⚠️ Outside reference range</div>
+      <div class="input-pair">
+        <input type="text" id="lab_lo" placeholder="Ref low" oninput="checkLabOOR()">
+        <input type="text" id="lab_hi" placeholder="Ref high" oninput="checkLabOOR()">
+      </div>
+      <textarea id="lab_notes" placeholder="Provider, context, follow-up…"></textarea>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" style="background:var(--purple)" onclick="saveLab()">Save</button>
+    </div>`;
+}
+
+function checkLabOOR() {
+  const v=parseFloat(document.getElementById('lab_val').value);
+  const lo=parseFloat(document.getElementById('lab_lo').value);
+  const hi=parseFloat(document.getElementById('lab_hi').value);
+  const oor = !isNaN(v)&&!isNaN(lo)&&!isNaN(hi)&&(v<lo||v>hi);
+  const vi=document.getElementById('lab_val');
+  vi.className=oor?'oor':'';
+  document.getElementById('oor_msg').style.display=oor?'block':'none';
+}
+
+function saveLab() {
+  const name=document.getElementById('lab_name').value;
+  const val=document.getElementById('lab_val').value;
+  if(!name||!val) return;
+  const lo=document.getElementById('lab_lo').value, hi=document.getElementById('lab_hi').value;
+  const v=parseFloat(val), loN=parseFloat(lo), hiN=parseFloat(hi);
+  const oor=!isNaN(v)&&!isNaN(loN)&&!isNaN(hiN)&&(v<loN||v>hiN);
+  state.labs.push({name, val, unit:document.getElementById('lab_unit').value, lo, hi, date:document.getElementById('lab_date').value, notes:document.getElementById('lab_notes').value, oor, ts:Date.now()});
+  save('labs'); closeModal(); render();
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+fetchWeather();
+render();
+// Refresh weather every 30 min
+setInterval(fetchWeather, 30*60*1000);
+</script>
+</body>
+</html>
