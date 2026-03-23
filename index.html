@@ -226,20 +226,28 @@
 <script>
 // ── DATA ──────────────────────────────────────────────────────────────────────
 const SYMPTOMS = [
-  {id:'airway', label:'Airway / Mucus',       icon:'🌬️', color:'#7EC8C8'},
-  {id:'hr',     label:'Heart Rate / Palp',    icon:'💓', color:'#E88B8B'},
-  {id:'fatigue',label:'Fatigue / Energy',     icon:'⚡', color:'#F2C94C'},
-  {id:'skin',   label:'Skin / Flushing',      icon:'🌸', color:'#F4A6C0'},
-  {id:'neuro',  label:'Neuro / Brain Fog',    icon:'🧠', color:'#B8A9E8'},
-  {id:'auto',   label:'Autonomic / Postural', icon:'🔄', color:'#82C9A0'},
-  {id:'hiccups',    label:'Hiccups',              icon:'😮', color:'#A8D8B9'},
-  {id:'throat',     label:'Upper Throat Spasm',  icon:'🫁', color:'#F4C6A0'},
-  {id:'chills',     label:'Chills',              icon:'🥶', color:'#A0C4F4'},
-  {id:'fever',      label:'Fever',               icon:'🌡️', color:'#F4A86A'},
-  {id:'cough',      label:'Cough',               icon:'😤', color:'#C4B8E8'},
-  {id:'larynx',     label:'Laryngitis',          icon:'🔇', color:'#E8C4B8'},
-  {id:'congestion', label:'Congestion',          icon:'🤧', color:'#B8D4E8'},
-  {id:'breathing',  label:'Difficulty Breathing',icon:'💨', color:'#E88BA8'},
+  {id:'airway',     label:'Airway / Mucus',        icon:'🌬️', color:'#7EC8C8'},
+  {id:'hr',         label:'Heart Rate / Palp',     icon:'💓', color:'#E88B8B'},
+  {id:'fatigue',    label:'Fatigue / Energy',      icon:'⚡', color:'#F2C94C'},
+  {id:'skin',       label:'Skin / Hives',          icon:'🌸', color:'#F4A6C0'},
+  {id:'flushing',   label:'Flushing',              icon:'🔴', color:'#F4826A'},
+  {id:'neuro',      label:'Neuro / Brain Fog',     icon:'🧠', color:'#B8A9E8'},
+  {id:'auto',       label:'Autonomic / Postural',  icon:'🔄', color:'#82C9A0'},
+  {id:'anxiety',    label:'Anxiety / Adrenaline',  icon:'😰', color:'#E8D4A0'},
+  {id:'hiccups',    label:'Hiccups',               icon:'😮', color:'#A8D8B9'},
+  {id:'throat',     label:'Upper Throat Spasm',    icon:'🫁', color:'#F4C6A0'},
+  {id:'chills',     label:'Chills',                icon:'🥶', color:'#A0C4F4'},
+  {id:'fever',      label:'Fever',                 icon:'🌡️', color:'#F4A86A'},
+  {id:'cough',      label:'Cough',                 icon:'😤', color:'#C4B8E8'},
+  {id:'larynx',     label:'Laryngitis',            icon:'🔇', color:'#E8C4B8'},
+  {id:'congestion', label:'Congestion',            icon:'🤧', color:'#B8D4E8'},
+  {id:'breathing',  label:'Difficulty Breathing',  icon:'💨', color:'#E88BA8'},
+  {id:'nausea',     label:'Nausea',                icon:'🤢', color:'#A8C4A0'},
+  {id:'pain',       label:'Joint / Muscle Pain',   icon:'🦴', color:'#C8B8A0'},
+  {id:'headache',   label:'Headache / Migraine',   icon:'🤕', color:'#D4A0C8'},
+  {id:'eyes',       label:'Eye Irritation',        icon:'👁️', color:'#A0C8D4'},
+  {id:'swelling',   label:'Swelling',              icon:'💧', color:'#A0B8D4'},
+  {id:'sleep',      label:'Sleep Quality',         icon:'😴', color:'#8BA8C8'},
 ];
 const MEDS = [
   {id:'flonase',    label:'Flonase',            dose:'2 sprays each nostril'},
@@ -250,10 +258,12 @@ const MEDS = [
   {id:'vitamind',   label:'Vitamin D',          dose:'daily'},
   {id:'inhaler1',   label:'Rescue Inhaler',     dose:'as needed'},
   {id:'inhaler2',   label:'Maintenance Inhaler',dose:'as directed'},
-  {id:'advil',      label:'Advil (ibuprofen)',   dose:'as needed'},
+  {id:'benadryl',   label:'Benadryl',            dose:'rescue antihistamine'},
+  {id:'advil',      label:'Advil (ibuprofen)',    dose:'as needed'},
   {id:'tylenol',    label:'Tylenol (acetaminophen)', dose:'as needed'},
-  {id:'navage',     label:'Navage Rinse',        dose:'1 session'},
-  {id:'nebulizer',  label:'Nebulizer',           dose:'1 session'},
+  {id:'epinephrine',label:'Epi-pen used ⚠️',      dose:'emergency'},
+  {id:'navage',     label:'Navage Rinse',         dose:'1 session'},
+  {id:'nebulizer',  label:'Nebulizer',            dose:'1 session'},
 ];
 const TRIGGERS = ['dairy','alcohol','high-histamine','fermented','processed','spicy','citrus'];
 
@@ -264,12 +274,16 @@ let state = {
   meds:     JSON.parse(localStorage.getItem('m_meds')     || '[]'),
   wearable: JSON.parse(localStorage.getItem('m_wearable') || '[]'),
   labs:     JSON.parse(localStorage.getItem('m_labs')     || '[]'),
+  vaccines: JSON.parse(localStorage.getItem('m_vaccines') || '[]'),
   weather:  null,
   tab:      'dash',
   exportDays: 7,
 };
 
 function save(key) { localStorage.setItem('m_' + key, JSON.stringify(state[key])); }
+
+// Vaccine storage init
+if(!localStorage.getItem('m_vaccines')) localStorage.setItem('m_vaccines', '[]');
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function fmt(ts) { return new Date(ts).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
@@ -457,7 +471,7 @@ function renderHistory(el) {
       body = `<div class="hist-name">${item.meal||'—'}</div>${item.drink?`<div class="hist-sub">🥤 ${item.drink}</div>`:''}${item.tags?.length?`<div style="font-size:11px;color:var(--pink);margin-top:3px">Triggers: ${item.tags.join(', ')}</div>`:''}`;
     } else {
       const taken = (item.taken||[]).map(id=>MEDS.find(m=>m.id===id)?.label).filter(Boolean).join(', ')||'None checked';
-      body = `<div style="font-size:12px;color:var(--text)">${taken}</div>`;
+      body = `<div style="font-size:12px;color:var(--text)">${taken}</div>${item.trial?`<div style="font-size:11px;color:var(--yellow);margin-top:3px">🧪 Trial: ${item.trial}</div>`:''}`;
     }
     const typeLabel = item._t==='s'?'⚡ SYMPTOMS':item._t==='m'?'🍽️ MEAL':'💊 MEDS';
     html += `<div class="hist-item">
@@ -517,6 +531,28 @@ function renderLabs(el) {
       </div>`;
     });
   }
+
+  // Vaccines section
+  html += `<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px;">
+    <div class="section-label" style="margin:0">💉 VACCINES</div>
+    <button onclick="openModal('vaccine')" style="padding:7px 14px;border-radius:10px;background:var(--purple);border:none;color:#0a0f1e;font-size:12px;font-weight:700;cursor:pointer;">+ Log Vaccine</button>
+  </div>`;
+  if(!state.vaccines.length) {
+    html += `<div class="card empty" style="padding:20px"><div class="empty-title">No vaccines logged yet</div></div>`;
+  } else {
+    [...state.vaccines].reverse().forEach(v => {
+      html += `<div class="card card-sm" style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><div style="font-size:13px;font-weight:700;color:#fff;">💉 ${v.name}</div>
+          ${v.provider?`<div style="font-size:11px;color:var(--muted)">${v.provider}</div>`:''}
+          ${v.reaction?`<div style="font-size:11px;color:var(--yellow);margin-top:3px">Reaction: ${v.reaction}</div>`:''}
+          </div>
+          <div style="text-align:right"><div style="font-size:12px;font-weight:700;color:var(--purple)">${v.date}</div>${v.lot?`<div style="font-size:10px;color:var(--muted)">Lot: ${v.lot}</div>`:''}</div>
+        </div>
+      </div>`;
+    });
+  }
+
   el.innerHTML = html;
 }
 
@@ -544,7 +580,9 @@ function renderExport(el) {
     `RECENT LAB RESULTS:`,
     ...(state.labs.length?[...state.labs].reverse().slice(0,6).map(l=>`  ${l.date} — ${l.name}: ${l.val}${l.unit?' '+l.unit:''}${l.oor?' ⚠️ OUT OF RANGE':''}`):['  None logged']),``,
     `MEALS LOGGED: ${state.meals.filter(m=>m.ts>=cut).length}`,
-    `MED LOGS: ${state.meds.filter(m=>m.ts>=cut).length}`,
+    `MED LOGS: ${state.meds.filter(m=>m.ts>=cut).length}`,``,
+    `VACCINES ON RECORD:`,
+    ...(state.vaccines.length?[...state.vaccines].reverse().map(v=>`  ${v.date} — ${v.name}${v.provider?' @ '+v.provider:''}${v.reaction?' | Reaction: '+v.reaction:''}`):[`  None logged`]),
   ].join('\n');
 
   el.innerHTML = `<div class="section-label">PROVIDER SUMMARY</div>
@@ -574,6 +612,7 @@ function openModal(type) {
   else if(type==='med') renderMedSheet(sheet);
   else if(type==='wearable') renderWearableSheet(sheet);
   else if(type==='lab') renderLabSheet(sheet);
+  else if(type==='vaccine') renderVaccineSheet(sheet);
 }
 
 function closeModal() {
@@ -661,6 +700,8 @@ function renderMedSheet(sheet) {
     <div class="sheet-title">💊 Meds & Supplements</div>
     <div class="sheet-body">
       ${MEDS.map(m=>`<div class="med-row" id="med_${m.id}" onclick="toggleMed('${m.id}')"><div><div class="med-name">${m.label}</div><div class="med-dose">${m.dose}</div></div><span id="medcheck_${m.id}" style="font-size:20px">⬜</span></div>`).join('')}
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin:8px 0 4px">TRIAL / OTHER MED</div>
+      <input type="text" id="med_trial" placeholder="Med name, dose, reason…">
       <textarea id="med_notes" placeholder="Notes (missed dose, reaction, timing…)"></textarea>
     </div>
     <div class="sheet-footer">
@@ -678,7 +719,7 @@ function toggleMed(id) {
 }
 
 function saveMeds() {
-  state.meds.push({taken:[...activeMeds], notes:document.getElementById('med_notes').value, ts:Date.now()});
+  state.meds.push({taken:[...activeMeds], trial:document.getElementById('med_trial')?.value||'', notes:document.getElementById('med_notes').value, ts:Date.now()});
   activeMeds.clear(); save('meds'); closeModal(); render();
 }
 
@@ -775,6 +816,31 @@ function saveLab() {
   const oor=!isNaN(v)&&!isNaN(loN)&&!isNaN(hiN)&&(v<loN||v>hiN);
   state.labs.push({name, val, unit:document.getElementById('lab_unit').value, lo, hi, date:document.getElementById('lab_date').value, notes:document.getElementById('lab_notes').value, oor, ts:Date.now()});
   save('labs'); closeModal(); render();
+}
+
+// VACCINE SHEET
+function renderVaccineSheet(sheet) {
+  sheet.innerHTML = `
+    <div class="sheet-handle"><div class="handle-bar"></div></div>
+    <div class="sheet-title">💉 Log Vaccine</div>
+    <div class="sheet-body">
+      <input type="text" id="vax_name" placeholder="Vaccine name (e.g. Flu, COVID, Tdap…)">
+      <input type="date" id="vax_date" value="${new Date().toISOString().split('T')[0]}">
+      <input type="text" id="vax_provider" placeholder="Where administered (e.g. pharmacy, Dr. Monthie)">
+      <input type="text" id="vax_lot" placeholder="Lot number (optional)">
+      <textarea id="vax_reaction" placeholder="Any reaction? (redness, fatigue, symptoms after…)"></textarea>
+    </div>
+    <div class="sheet-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" style="background:var(--purple)" onclick="saveVaccine()">Save</button>
+    </div>`;
+}
+
+function saveVaccine() {
+  const name = document.getElementById('vax_name').value;
+  if(!name) return;
+  state.vaccines.push({name, date:document.getElementById('vax_date').value, provider:document.getElementById('vax_provider').value, lot:document.getElementById('vax_lot').value, reaction:document.getElementById('vax_reaction').value, ts:Date.now()});
+  save('vaccines'); closeModal(); render();
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
